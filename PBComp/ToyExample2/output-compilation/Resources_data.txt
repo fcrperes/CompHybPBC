@@ -1,0 +1,44 @@
+Resources of the original quantum circuit:
+
+Total number of qubits: 2
+Total number of T gates: 2
+Total number of CNOT gates: 1
+Total number of H+S gates: 2
+Total number of Clifford gates: 3
+
+----- Resources of the compiled computation: -----
+Total number of qubits: 2
+Mean nr. of CX gates: 3
+Std CX gates: 0.0
+Mean nr. of H+S gates: 9.984
+Std H+S gates: 4.002
+
+----- Qiskit's depth measure: -----
+Average circuit depth: 11.494
+Std of the circuit depth: 1.501
+
+----- Classical runtime: -----
+Average: 0.242ms/shot
+Standard deviation: 0.024ms/shot
+
+----- Quantum simulator job time: -----
+Average: 1.797ms/shot
+Standard deviation: 0.383ms/shot
+
+----- Coherence analysis (time in-between qu. jobs): -----
+ * Maximum time in between jobs: 
+Average: 0.077ms/shot
+Standard deviation: 0.008ms/shot
+
+ * Average time in between jobs: 
+Average: 0.077ms/shot
+Standard deviation: 0.008ms/shot
+
+ * Minimum time in between jobs: 
+Average: 0.077ms/shot
+Standard deviation: 0.008ms/shot
+
+----------------------------------------------------
+Total classical runtime: 0.248s (1024 shots)
+Total quantum simulator job time: 1.84s (1024 shots)
+Total runtime: 2.088s (1024 shots)

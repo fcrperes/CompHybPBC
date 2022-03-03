@@ -1,0 +1,17 @@
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q_stab[2];
+qreg q_magic[2];
+creg c_stab[2];
+creg c_magic[2];
+h q_stab[0];
+cx q_stab[0],q_magic[0];
+measure q_magic[0] -> c_magic[0];
+if(c_magic[0]==1) s q_stab[0];
+h q_stab[0];
+cx q_stab[0],q_stab[1];
+cx q_stab[1],q_magic[1];
+measure q_magic[1] -> c_magic[1];
+if(c_magic[1]==1) s q_stab[1];
+measure q_stab[0] -> c_stab[1];
+measure q_stab[1] -> c_stab[0];

@@ -1,0 +1,3 @@
+Number of samples = 99696. 
+Average time/sample = 0.005s. 
+Total time = 3.818 hours.

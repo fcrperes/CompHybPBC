@@ -1,0 +1,455 @@
+Numpy version: 1.21.2
+Matplotlib version: 3.4.3
+Qiskit version: {'qiskit-terra': '0.18.3', 'qiskit-aer': '0.9.1', 'qiskit-ignis': '0.6.0', 'qiskit-ibmq-provider': '0.18.0', 'qiskit-aqua': '0.9.5', 'qiskit': '0.32.0', 'qiskit-nature': None, 'qiskit-finance': None, 'qiskit-optimization': None, 'qiskit-machine-learning': None}
+
+Total number of shots: 1024
+Number of shots recorded in this file: 32
+
+
+* Shot number: 0
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 0 ----------------- 
+
+* Shot number: 1
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 1 ----------------- 
+
+* Shot number: 2
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 2 ----------------- 
+
+* Shot number: 3
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 3 ----------------- 
+
+* Shot number: 4
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 4 ----------------- 
+
+* Shot number: 5
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 5 ----------------- 
+
+* Shot number: 6
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 6 ----------------- 
+
+* Shot number: 7
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 1
+
+ The actual quantum computation is:
++IY | +Y | 1 
+
+ The sequence of computational outcomes is:
++IY | 1
+
+ ----------------- End of shot 7 ----------------- 
+
+* Shot number: 8
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 8 ----------------- 
+
+* Shot number: 9
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 1
+
+ The actual quantum computation is:
++IY | +Y | 1 
+
+ The sequence of computational outcomes is:
++IY | 1
+
+ ----------------- End of shot 9 ----------------- 
+
+* Shot number: 10
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 10 ----------------- 
+
+* Shot number: 11
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 11 ----------------- 
+
+* Shot number: 12
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 12 ----------------- 
+
+* Shot number: 13
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 13 ----------------- 
+
+* Shot number: 14
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 14 ----------------- 
+
+* Shot number: 15
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 15 ----------------- 
+
+* Shot number: 16
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 1
+
+ The actual quantum computation is:
++ZX | +X | 1 
+
+ The sequence of computational outcomes is:
++ZX | 1
+
+ ----------------- End of shot 16 ----------------- 
+
+* Shot number: 17
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 17 ----------------- 
+
+* Shot number: 18
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 18 ----------------- 
+
+* Shot number: 19
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 19 ----------------- 
+
+* Shot number: 20
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 1
+
+ The actual quantum computation is:
++IY | +Y | 1 
+
+ The sequence of computational outcomes is:
++IY | 1
+
+ ----------------- End of shot 20 ----------------- 
+
+* Shot number: 21
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 21 ----------------- 
+
+* Shot number: 22
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 22 ----------------- 
+
+* Shot number: 23
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 23 ----------------- 
+
+* Shot number: 24
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 24 ----------------- 
+
+* Shot number: 25
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 25 ----------------- 
+
+* Shot number: 26
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 26 ----------------- 
+
+* Shot number: 27
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 27 ----------------- 
+
+* Shot number: 28
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 28 ----------------- 
+
+* Shot number: 29
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 29 ----------------- 
+
+* Shot number: 30
+
+ The general Pauli-based computation is:
++XZ | 0
++ZX | 0
+
+ The actual quantum computation is:
++ZX | +X | 0 
+
+ The sequence of computational outcomes is:
++ZX | 0
+
+ ----------------- End of shot 30 ----------------- 
+
+* Shot number: 31
+
+ The general Pauli-based computation is:
++XZ | 1
++IY | 0
+
+ The actual quantum computation is:
++IY | +Y | 0 
+
+ The sequence of computational outcomes is:
++IY | 0
+
+ ----------------- End of shot 31 ----------------- 
