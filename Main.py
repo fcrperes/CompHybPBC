@@ -44,11 +44,11 @@ of unitary Clifford circuits with magic state inputs”. In:Proc. R. Soc. A475
 
 [3]  Filipa Peres and Ernesto Galvão. "Quantum circuit compilation and hybrid
 computation using Pauli-based computation".
-EPRINT: .
+EPRINT: https://arxiv.org/abs/2203.01789.
 
 Author: F.C.R. Peres
 Creation date: 01/06/2021
-Last update: 01/03/2022
+Last update: 04/03/2022
 --------------------------------------------------------------------------------
 '''
 import c_and_c as cc

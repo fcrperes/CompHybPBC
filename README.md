@@ -1,7 +1,7 @@
 # Circuit compilation and hybrid computation using Pauli-based computation
 
 In this repository we can find the Python code used to produce the results
-presented in our pre-print [].
+presented in our pre-print [https://arxiv.org/abs/2203.01789].
 
 This code uses different modules, each equipped with different classes, methods
 and functions to make things more readable and user friendly.

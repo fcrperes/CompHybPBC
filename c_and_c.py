@@ -56,12 +56,12 @@ DOI: https://doi.org/10.1016/0743-7315(91)90115-P.
 
 [3]  Filipa Peres and Ernesto Galvão. “Quantum circuit compilation and hybrid
 computation using Pauli-based computation”.
-EPRINT: .
+EPRINT: https://arxiv.org/abs/2203.01789.
 
 
 Author: F.C.R. Peres
 Creation date: 14/06/2021
-Last updated: 28/02/2022
+Last updated: 04/03/2022
 --------------------------------------------------------------------------------
 '''
 
