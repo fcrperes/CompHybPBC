@@ -64,7 +64,7 @@ These methods are the following:
                 * each T gate acting on a qubit "q_stab[i]" is replaced by a
                 T-gadget, written in terms of the conditional "IF" statement;
                 * we know that the qubits in the auxiliary register must be in
-                state |A>, but we do not do this explicitly because it is not
+                state |A⟩, but we do not do this explicitly because it is not
                 convenient for the next stage of the compilation procedure. It
                 should simply be kept in the back of our mind that the qubits in
                 `q_magic` are magic-state qubits.
@@ -77,7 +77,7 @@ in other modules).
 
 Author: F.C.R. Peres
 Creation date: 30/11/2021
-Last updated: 27/02/2022
+Last updated: 19/07/2022
 --------------------------------------------------------------------------------
 '''
 
@@ -292,12 +292,12 @@ class QuCirc():
         a new .qasm file with the gadgetized (i.e., adaptive) Clifford quantum
         circuit to be used in the compilation. An important observation is that
         this method creates a second qubit register (which holds the auxiliary
-        qubits). We must remember that these need to be initialized in the |A>
+        qubits). We must remember that these need to be initialized in the |A⟩
         even though this method does not do this because it is not convenient
         for the next stages of the computation.
         Unlike the preparation for the "normal" compilation, here the number of
         stabilizer state qubits will be n+k (where k is the selected number of
-        virtual qubits), and the number of qubits in the magic state |A> will be
+        virtual qubits), and the number of qubits in the magic state |A⟩ will be
         t-k. This is the main different in terms of preparing the input for the
         main code.
 

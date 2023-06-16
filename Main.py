@@ -48,41 +48,48 @@ EPRINT: https://arxiv.org/abs/2203.01789.
 
 Author: F.C.R. Peres
 Creation date: 01/06/2021
-Last update: 04/03/2022
+Last update: 19/07/2022
 --------------------------------------------------------------------------------
 '''
 import c_and_c as cc
 
 # Select the location and name of the input sample file(s)
-file_loc = 'WRITE LOCATION OF THE FOLDER WITH THE INPUT SAMPLE'
-input_file_name = 'WRITE NAME OF THE INPUT .QASM FILE'
+file_loc = '/Users/fcrperes/Documents/3._Academic/PhD/Thesis/My_work/2022/2._Hybrid_PBC/zz.-Code3-Hybrid_improved/z2._RQC/special_for_this_task/tcount13--n5by5--ncycles8/_samples/RQC0/'
+input_file_name = [f'RQC0-mq{i}' for i in range(25)]
 
 # Select the number of virtual qubits (place `0` to carry out PBC compilation)
-vq = 0
+vq = 1
+prec = 0.01
+cl = 0.99
 
 # The user can change the following names at will
-clifford_file_name = 'MSI'  # File with the equivalent adaptive Clifford circuit
-output_file_name = 'Compilation_data'  # File with the PBC tree paths
-resources_file_name = 'Resources_data'  # File with some numerical data
+clifford_file_name = [f'MSI0-mq{i}-hybrid-{vq}vq' for i in range(25)
+                      ]  # File with the equivalent adaptive Clifford circuit
+output_file_name = [f'Compilation_data0-mq{i}-hybrid'
+                    for i in range(25)]  # File with the PBC tree paths
+resources_file_name = [f'Resources_data0-mq{i}-hybrid'
+                       for i in range(25)]  # File with some numerical data
 
-if vq == 0:
-    # Run PBC compilation (Task 1 in [3])
-    cc.run_pbc(file_loc,
-               input_file_name,
-               clifford_file_name,
-               output_file_name,
-               resources_file_name,
-               shots=1024,
-               paths_to_file=32,
-               dummy=False,
-               plot_hist=True,
-               norm_hist=True)
+for k in range(10, 25):
+    if vq == 0:
+        # Run PBC compilation (Task 1 in [3])
+        cc.run_pbc(file_loc,
+                   input_file_name,
+                   clifford_file_name,
+                   output_file_name,
+                   resources_file_name,
+                   shots=1024,
+                   paths_to_file=32,
+                   dummy=False,
+                   plot_hist=True,
+                   norm_hist=True)
 
-else:
-    # Run hybrid PBC (Task 2 in [3])
-    cc.hybrid_pbc(file_loc,
-                  input_file_name,
-                  clifford_file_name,
-                  resources_file_name,
-                  virtual_qubits=vq,
-                  precision=0.01)
+    else:
+        # Run hybrid PBC (Task 2 in [3])
+        cc.hybrid_pbc(file_loc,
+                      input_file_name[k],
+                      clifford_file_name[k],
+                      resources_file_name[k],
+                      virtual_qubits=vq,
+                      precision=prec,
+                      confidence_level=cl)

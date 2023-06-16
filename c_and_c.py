@@ -12,7 +12,7 @@ modules, depending on whether we are to carry out Task 1 (i.e., PBC compilation)
 or Task 2 (hybrid PBC).
 Note that there are 2 quantum registers: one named `q_stab` and the other named
 `q_magic`. The latter is the register that contains the qubits which are in the
-magic state |A>, and which are the only ones that will be used in the actual
+magic state |A⟩, and which are the only ones that will be used in the actual
 quantum part of the computation.
 
 * Pauli_Operator class: contains a series of methods which can be applied to any
@@ -61,7 +61,7 @@ EPRINT: https://arxiv.org/abs/2203.01789.
 
 Author: F.C.R. Peres
 Creation date: 14/06/2021
-Last updated: 04/03/2022
+Last updated: 07/09/2022
 --------------------------------------------------------------------------------
 '''
 
@@ -755,7 +755,7 @@ def qu_computing(q_count, t_count, current_Pauli, state_vector, dummy):
             qc.measure(qr, cr)
 
         depth = qc.depth() - 2
-        # the subtraction removes the gates H and T used to prepare |A>
+        # the subtraction removes the gates H and T used to prepare |A⟩
 
     ops = qc.count_ops()
 
@@ -1311,7 +1311,8 @@ def hybrid_pbc(file_loc,
                clifford_file_name,
                resources_file_name,
                virtual_qubits=1,
-               precision=0.3):
+               precision=0.1,
+               confidence_level=0.99):
     """Function which carries out the hybrid Pauli-based computation to estimate
     the probability, p, that the output bit yields the outcome s=1, within an
     error of at most `precision` and using a number of virtual qubits defined by
@@ -1326,7 +1327,9 @@ def hybrid_pbc(file_loc,
         file
         virtual_qubits (int, optional): Number of desired virtual qubits.
         Defaults to 1.
-        precision (float, optional): Maximum allowed error. Defaults to 0.3.
+        precision (float, optional): Maximum allowed error. Defaults to 0.1.
+        confidence_level (float, optional): Desired confidence level. Defaults
+        to 0.99.
     """
     # Creating the folder for the output files:
     if not os.path.exists(f'{file_loc}output'):
@@ -1352,108 +1355,94 @@ def hybrid_pbc(file_loc,
     t_count = t_count - virtual_qubits
     q_count = q_count + virtual_qubits
 
-    # STEP 3 -  Determining the sum of the squared weights on the fly:
+    # STEP 3 -  Determine the required number of samples:
     weights_1vq = [1 / 2, (1 - sqrt(2)) / 2, 1 / sqrt(2)]
+    probs_1vq = [sqrt(2) / 4, (2 - sqrt(2)) / 4, 1 / 2]
+    l1_norm = sqrt(2)**virtual_qubits
+    l1_squared = 2**virtual_qubits
+    fail_prob = 1 - confidence_level
+    k_const = math.log(2 / fail_prob) / 2  # from Hoeffding's inequality
+    nr_samples = int(math.ceil(k_const * l1_squared / precision**2))
 
-    sum_squares = 0
-    for i in range(3**virtual_qubits):
-        label = np.base_repr(i, base=3)
-        label = str(label)
-        if len(label) != virtual_qubits:
-            label = '0' * (virtual_qubits - len(label)) + label
+    # STEP 4 - Perform the hybrid computation by making a weighted
+    # sampling of the (smaller) PBC to be run in each iteration:
+    results = []
+    qu_time, cl_time, tt_time = ([], [], [])
+    rand_variable = 0
+    for _ in range(nr_samples):
+        initial_time = time.perf_counter()
 
+        label = ''
+        for _ in range(virtual_qubits):
+            chosen = str(
+                np.random.choice(np.arange(0, len(weights_1vq)), p=probs_1vq))
+            label += chosen
+
+        # Finding out the signal and the unitary associated with this iteration:
         weight = 1
         for s in label:
             weight = weight * weights_1vq[int(s)]
+        signal = weight / abs(weight)
 
-        sum_squares += abs(weight)**2
+        unitary = []
+        for s in range(len(label)):
+            string = f'{q_count - s - 1}'
+            unitaries_1vq = [[['h q_stab[' + string + '];\n']],
+                             [['h q_stab[' + string + '];\n'],
+                              ['s q_stab[' + string + '];\n'],
+                              ['s q_stab[' + string + '];\n']],
+                             [['h q_stab[' + string + '];\n'],
+                              ['s q_stab[' + string + '];\n']]]
+            unitary.append(unitaries_1vq[int(label[s])])
 
-    # STEP 4 - For each of the 3^k PBCs that we need the simulate, use a number
-    # of samples which is determined by the established precision:
-    percentile = sqrt(
-        20)  # 95% confidence interval from Chebyshev's inequality
-    nr_samples = int(math.ceil(percentile**2 * sum_squares / precision**2))
+        # Now that we have the correct signal and unitary for this round, we
+        # can proceed with the actual hybrid computation:
+        # (a) the circuit list is copied:
+        clist = clifford.copy()
+        # (b) we add the appropriate unitary in front of each circuit:
+        for element in unitary:
+            for k in range(len(element)):
+                clist.insert(first_gate_index,
+                             element[len(element) - k - 1][0])
+        # (c) we initialize the Pauli lists
+        all_Ps, all_outcs = initialize_lists(q_count, t_count)
+        pipc_Ps, pipc_outcs = initialize_lists(q_count, t_count)
+        # (d) we carry out the compilation
+        fqm = False
+        quant_time = 0
+        for _ in range(nr_mmts):
+            clist, current_Pauli = find_new_Pauli(clist, q_count, t_count)
+            clist, pipc_Ps, pipc_outcs, all_Ps, all_outcs, fqm = compiling(
+                clist,
+                q_count,
+                t_count,
+                first_gate_index,
+                pipc_Ps,
+                pipc_outcs,
+                all_Ps,
+                all_outcs,
+                current_Pauli,
+                fqm,
+                dummy=False)
+            quant_time += job_time
 
-    probabilities = []
-    qu_time, cl_time, tt_time = ([], [], [])
-    for _ in range(nr_samples):
-        outcome = 0
-        for i in range(3**virtual_qubits):
-            initial_time = time.perf_counter()
+        # The outcome is computed as:
+        outcome = signal * ((-1)**all_outcs[-1]) * l1_norm
+        rand_variable += (1 - outcome) / (2 * nr_samples)
 
-            label = np.base_repr(i, base=3)
-            label = str(label)
-            if len(label) != virtual_qubits:
-                label = '0' * (virtual_qubits - len(label)) + label
+        # once we have the results, we have all we need/want so that the
+        # final runtime should be taken here (writing to the files should
+        # not be included in this time):
+        final_time = time.perf_counter() - initial_time
+        tt_time.append(final_time)
+        qu_time.append(quant_time)
+        cl_time.append(final_time - quant_time)
 
-            # Finding out the correct weight out of the 3^k different weights
-            weight = 1
-            for s in label:
-                weight = weight * weights_1vq[int(s)]
+        results.append(outcome)
 
-            # Finding out the correct unitary our of the 3^k different weights
-            unitary = []
-            for s in range(len(label)):
-                string = f'{q_count - s - 1}'
-                unitaries_1vq = [[['h q_stab[' + string + '];\n']],
-                                 [['h q_stab[' + string + '];\n'],
-                                  ['s q_stab[' + string + '];\n'],
-                                  ['s q_stab[' + string + '];\n']],
-                                 [['h q_stab[' + string + '];\n'],
-                                  ['s q_stab[' + string + '];\n']]]
-
-                unitary.append(unitaries_1vq[int(label[s])])
-
-            # Now that we have the correct weight and unitary for this round, we
-            # can proceed with the actual hybrid computation:
-            # (a) the circuit list is copied:
-            clist = clifford.copy()
-            # (b) we add the appropriate unitary in front of each circuit:
-            for element in unitary:
-                for k in range(len(element)):
-                    clist.insert(first_gate_index,
-                                 element[len(element) - k - 1][0])
-
-            # (c) we initialize the Pauli lists
-            all_Ps, all_outcs = initialize_lists(q_count, t_count)
-            pipc_Ps, pipc_outcs = initialize_lists(q_count, t_count)
-
-            # (d) we carry out the compilation
-            fqm = False
-            quant_time = 0
-            for _ in range(nr_mmts):
-                clist, current_Pauli = find_new_Pauli(clist, q_count, t_count)
-                clist, pipc_Ps, pipc_outcs, all_Ps, all_outcs, fqm = compiling(
-                    clist,
-                    q_count,
-                    t_count,
-                    first_gate_index,
-                    pipc_Ps,
-                    pipc_outcs,
-                    all_Ps,
-                    all_outcs,
-                    current_Pauli,
-                    fqm,
-                    dummy=False)
-                quant_time += job_time
-
-            # Result is computed:
-            outcome += weight * all_outcs[-1]
-
-            # once we have the results, we have all we need/want so that the
-            # final runtime should be taken here (writing to the files should
-            # not be included in this time):
-            final_time = time.perf_counter() - initial_time
-
-            tt_time.append(final_time)
-            qu_time.append(quant_time)
-            cl_time.append(final_time - quant_time)
-
-        probabilities.append(outcome)
-
-    with open(f'{file_loc}output/{resources_file_name}--probabilities.txt',
+    with open(f'{file_loc}output/{resources_file_name}--results.txt',
               'w') as file_object:
-        json.dump(probabilities, file_object)
+        json.dump(results, file_object)
 
     with open(f'{file_loc}output/{resources_file_name}--cl_time.txt',
               'w') as file_object:
@@ -1469,7 +1458,25 @@ def hybrid_pbc(file_loc,
 
     with open(f'{file_loc}output/{resources_file_name}.txt',
               'w') as file_object:
-        file_object.write(f'Number of samples = {nr_samples}. \n')
-        file_object.write(
-            f'Average time/sample = {round(stat.mean(tt_time), 3)}s. \n')
-        file_object.write(f'Total time = {round(sum(tt_time)/3600, 3)} hours.')
+        file_object.write(f'Chosen precision = {precision}. \n')
+        file_object.write(f'Chosen confidence level = {confidence_level}. \n')
+        file_object.write('------------------------------------------------\n')
+        file_object.write(f'The l1-norm = {l1_norm}. \n')
+        file_object.write(f'Total number of samples = {nr_samples}. \n')
+        file_object.write(f'The desired probability is p = {rand_variable}.\n')
+        file_object.write('------------------------------------------------\n')
+
+        if stat.mean(tt_time) < 0.01:
+            file_object.write(
+                f'Average time/sample = {round(stat.mean(tt_time)*1000, 1)} ms. \n'
+            )
+        else:
+            file_object.write(
+                f'Average time/sample = {round(stat.mean(tt_time), 3)} s. \n')
+
+        if sum(tt_time) / 3600 < 1:
+            file_object.write(
+                f'Total time = {round(sum(tt_time)/60, 3)} minutes.')
+        else:
+            file_object.write(
+                f'Total time = {round(sum(tt_time)/3600, 3)} hours.')
