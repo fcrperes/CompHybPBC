@@ -39,9 +39,9 @@ computation for those larger instances. However, the output distribution
 obtained when this option is used will be incorrect whenever the quantum
 measurements do not have uniform output: p(0)=p(1)=1/2.
 
-* run_pbc(): carries out Task 1 [3].
+* run_pbc(): carries out Task 1 [2].
 
-* hybrid_pbc(): carries out Task 2 [3].
+* hybrid_pbc(): carries out Task 2 [2].
 
 Useful references:
 [1]  S.Aaronson  and  D.Gottesman. “Improved simulation of stabilizer circuits”.
@@ -49,19 +49,14 @@ In:Phys. Rev. A70 (2004), p. 052328.
 DOI: https://doi.org/10.1103/PhysRevA.70.052328.
 EPRINT: https://arxiv.org/abs/quant-ph/0406196v5.
 
-[2]  Çetin K. Koç and Sarath N. Arachchige. “A fast algorithm for gaussian
-elimination over GF(2) and its implementation on the GAPP”. In:Journal of
-Parallel and Distributed Computing 13 (1991), pp. 118-122.
-DOI: https://doi.org/10.1016/0743-7315(91)90115-P.
-
-[3]  Filipa Peres and Ernesto Galvão. “Quantum circuit compilation and hybrid
+[2]  Filipa Peres and Ernesto Galvão. “Quantum circuit compilation and hybrid
 computation using Pauli-based computation”.
 EPRINT: https://arxiv.org/abs/2203.01789.
 
 
 Author: F.C.R. Peres
 Creation date: 14/06/2021
-Last updated: 07/09/2022
+Last updated: 26/09/2023
 --------------------------------------------------------------------------------
 '''
 
@@ -412,7 +407,7 @@ class Pauli_Operator():
 
         return Pauli_Operator(RPQ_prod)
 
-    def is_independent(self, q_count, t_count, pipc_Paulis):
+    def is_independent(self, q_count, t_count, pipc_Paulis, M):
         """This method checks whether or not the Pauli operator it is applied to
         is independent from all previous (independent) Paulis in the Pauli-based
         computation.
@@ -425,14 +420,20 @@ class Pauli_Operator():
             pipc_Paulis (list([Pauli_Operator])): A Python list with all of the
             previously measured (independent and pairwise commuting)
             Pauli_Operator instances
+            M: The matrix we use to compute the nullspace(), and which is
+            changed and updated as the PBC procedure progresses
 
         Returns:
-            int (0/1): the outcome of the Pauli if it is trivial (deterministic)
-            'True': if the Pauli is independent from all previous Paulis
-            list([0/1]): a list of zeros and ones which is the kernel of the
-            matrix made up by the previous (independent) Paulis and the current
-            one. This list identifies which are the previous Pauli operators
-            that the current Pauli depends on
+            tuple (diverse, list): (1) Admits 3 possible situations:
+            (1a) int (0/1): the outcome of the Pauli if it is trivial
+            (deterministic)
+            (1b) 'True': if the Pauli is independent from all previous Paulis
+            (1c) list([0/1]): a list of zeros and ones which is the kernel of
+            the matrix made up by the previous (independent) Paulis and the
+            current one. This list identifies which are the previous Pauli
+            operators that the current Pauli depends on.
+            (2) The matrix M is also returned by this function as it needs to
+            be tracked during the whole computation
         """
         if (self.bin_vec[q_count:q_count + t_count]
                 == [0 for _ in range(t_count)]
@@ -441,33 +442,33 @@ class Pauli_Operator():
             # if the Pauli is trivial in the ancillary (magic) qubits, its mmt
             # is (immediately) trivial and deterministic
             outcome = self.bin_vec[-1]
-            return int(outcome)
+            return (int(outcome), M)
 
         else:
             # if the Pauli is not trivial in the ancillas it may be dependent
             # or it may be independent
             if len(pipc_Paulis) == q_count:
                 #if this is the case we get the first independent Pauli:
-                return 'True'
+                P = self.bin_vec.copy()
+                M.append(P[q_count:q_count + t_count] +
+                         P[2 * q_count + t_count:] + [1] + [0] * t_count)
+                return ('True', M)
 
             else:
-                reduced_pipc_Paulis = []
-                for Pauli in pipc_Paulis[q_count:]:
-                    P = Pauli.bin_vec.copy()
-                    reduced_pipc_Paulis.append(P[q_count:q_count + t_count] +
-                                               P[2 * q_count + t_count:-1])
-
                 P = self.bin_vec.copy()
-                reduced_pipc_Paulis.append(P[q_count:q_count + t_count] +
-                                           P[2 * q_count + t_count:-1])
+                position = len(M)
+                vec = [0] * (t_count + 1)
+                vec[position] = 1
+                M.append(P[q_count:q_count + t_count] +
+                         P[2 * q_count + t_count:] + vec)
 
-                kernel = nullspace(reduced_pipc_Paulis)
+                (kernel, M) = nullspace(M)
 
                 if kernel == []:
                     # The operator is independent from the previous operators.
-                    return 'True'
+                    return ('True', M)
                 else:
-                    return kernel
+                    return (kernel, M)
 
     def is_commuting(self, q_count, t_count, pipc_Paulis):
         """This method checks out whether the Pauli_Operator instance commutes
@@ -520,55 +521,69 @@ class Pauli_Operator():
             return index
 
 
-def nullspace(mat):
-    """This function receives as input a matrix input as a list of list (i.e.,
-    a nested list) where each line represents a different binary vector (or
-    Pauli operator) and returns a list indicating which of those vectors are
-    linearly dependent mod 2. If all vectors are linearly independent (mod 2),
-    then the function returns an empty list. (See ref. [2])
+def nullspace(matrix):
+    """This function receives a matrix input as a list of list (i.e., a nested
+    list) where each line represents a different binary vector and returns a
+    list indicating which of the previously independent and pairwise communting
+    Paulis can be used to obtain the current Pauli under test. If all vectors
+    are linearly independent (mod 2), then the function returns an empty list.
 
     Args:
-        mat (list): nested list representing the matrix containing one Pauli
-        operator per line.
+        matrix (list): nested list representing the matrix containing one
+        binary vector per line
 
     Returns:
-        list: list with entries 0 or 1, or empty list. In the former case, the
-        entries with value 1 indicate the Pauli operators which are linearly
-        dependent on one another.
+        tuple (list, list): (1) list with entries 0 or 1, or empty list. In the
+        former case, the entries with value 1 indicate the Pauli operators
+        which are linearly dependent on one another. (2) the updated matrix
+        used to assess linear (in)dependence.
     """
-    matrix = copy.deepcopy(mat)
-    n_rows = len(matrix)  # number of Pauli operators
-    n_columns = len(matrix[0])  # size of the Pauli operators
-    track = ['False'] * n_rows
-    kernel = [0] * n_rows
+    t_count = int((len(matrix[0]) - 2) / 3)
+    n_rows = len(matrix)
+    all_columns = [i for i in range(len(matrix[0]))]
+    sel_columns = [i for i in range(2 * t_count)]
+    unused_columns = copy.deepcopy(sel_columns)
+    used_columns = []
 
-    for j in range(n_columns):
-        for i in range(n_rows):
-            if matrix[i][j] == 1:
-                track[i] = 'True'
+    track_rc = [-1] * 2 * t_count  # tracks which column is 1 only for row r
+    for r in range(n_rows - 1):
+        for c in sel_columns:
+            if matrix[r][c] == 1:
+                track_rc[c] = r
+                unused_columns.remove(c)
+                used_columns.append(c)
                 break
 
-        for k in range(n_columns):
-            if k != j:
-                if matrix[i][k] == 1:
-                    for a in range(n_rows):
-                        matrix[a][k] = (matrix[a][k] + matrix[a][j]) % 2
+    for c1 in used_columns:
+        if matrix[-1][c1] == 1:
+            for c2 in all_columns:
+                matrix[-1][c2] = (matrix[-1][c2] +
+                                  matrix[track_rc[c1]][c2]) % 2
 
-    if 'False' in track:
-        index = track.index('False')
-        kernel[index] = 1
+    if matrix[-1][:-(t_count + 2)] == [0] * (2 * t_count):
+        # The current Pauli depends on previous Paulis:
+        kernel = matrix[-1][2 * t_count + 1:2 * t_count + 1 + n_rows]
+        matrix.pop()  # we eliminate the Pauli from the matrix
+        return (kernel, matrix)
 
-        line = matrix[index]
-        for j in range(n_columns):
-            if line[j] == 1:
-                for i in range(n_rows):
-                    if i != index:
-                        if matrix[i][j] == 1:
-                            kernel[i] = 1
     else:
-        kernel = []
+        # The current Pauli is independent from previous Paulis:
+        kernel = []  # we leave the kernel empty to signal independence
 
-    return kernel
+        # The matrix will need to be modified so that this new Pauli is 1 in
+        # a columns where all other Paulis are 0:
+        for c1 in unused_columns:
+            if matrix[-1][c1] == 1:
+                track_rc[-1] = c1
+                break
+
+        flagged = track_rc[-1]
+        for r in range(n_rows - 1):
+            if matrix[r][flagged] == 1:
+                for c in all_columns:
+                    matrix[r][c] = (matrix[r][c] + matrix[-1][c]) % 2
+
+        return (kernel, matrix)
 
 
 def initialize_lists(q_count, t_count):
@@ -787,6 +802,7 @@ def compiling(circuit_list,
               t_count,
               first_gate_index,
               pipc_Paulis,
+              matrix,
               pipc_outcomes,
               all_Paulis,
               all_outcomes,
@@ -809,6 +825,7 @@ def compiling(circuit_list,
         measured (independent and pairwise commuting) Pauli operators
         pipc_outcomes (list(0/1))): A list with the measurement outcomes
         associated with all of the previously measured Pauli operators
+        matrix (): TBD
         all_Paulis (list(Pauli_Operator)): A list with all of the Pauli
         operators from the generalized PBC that have been processed up until
         this point
@@ -861,7 +878,8 @@ def compiling(circuit_list,
         circuit_list.insert(first_gate_index, v)
 
     else:
-        kernel = current_Pauli.is_independent(q_count, t_count, pipc_Paulis)
+        kernel, matrix = current_Pauli.is_independent(q_count, t_count,
+                                                      pipc_Paulis, matrix)
         if isinstance(kernel, list):
             nr_rows = len(kernel)
             outcome = 0
@@ -916,8 +934,8 @@ def compiling(circuit_list,
                 circuit_list[index] = line.partition(' ')[2]
             break
 
-    return circuit_list, pipc_Paulis, pipc_outcomes, all_Paulis, all_outcomes,\
-        first_qm
+    return circuit_list, pipc_Paulis, matrix, pipc_outcomes, all_Paulis,\
+        all_outcomes, first_qm
 
 
 def run_pbc(file_loc,
@@ -998,6 +1016,7 @@ def run_pbc(file_loc,
 
             all_Ps, all_outcs = initialize_lists(q_count, t_count)
             pipc_Ps, pipc_outcs = initialize_lists(q_count, t_count)
+            mat = []
 
             fqm = False
             quant_time = 0
@@ -1006,12 +1025,13 @@ def run_pbc(file_loc,
             cohe_per_shot = []
             for j in range(nr_mmts):
                 clist, current_Pauli = find_new_Pauli(clist, q_count, t_count)
-                clist, pipc_Ps, pipc_outcs, all_Ps, all_outcs, fqm = compiling(
+                clist, pipc_Ps, mat, pipc_outcs, all_Ps, all_outcs, fqm = compiling(
                     clist,
                     q_count,
                     t_count,
                     first_gate_index,
                     pipc_Ps,
+                    mat,
                     pipc_outcs,
                     all_Ps,
                     all_outcs,
@@ -1407,17 +1427,20 @@ def hybrid_pbc(file_loc,
         # (c) we initialize the Pauli lists
         all_Ps, all_outcs = initialize_lists(q_count, t_count)
         pipc_Ps, pipc_outcs = initialize_lists(q_count, t_count)
+        mat = []
+
         # (d) we carry out the compilation
         fqm = False
         quant_time = 0
         for _ in range(nr_mmts):
             clist, current_Pauli = find_new_Pauli(clist, q_count, t_count)
-            clist, pipc_Ps, pipc_outcs, all_Ps, all_outcs, fqm = compiling(
+            clist, pipc_Ps, mat, pipc_outcs, all_Ps, all_outcs, fqm = compiling(
                 clist,
                 q_count,
                 t_count,
                 first_gate_index,
                 pipc_Ps,
+                mat,
                 pipc_outcs,
                 all_Ps,
                 all_outcs,

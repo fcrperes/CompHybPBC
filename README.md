@@ -23,7 +23,7 @@ Contact: filipa.peres@inl.int
 
 
 **Brief description:** The modules supplied allow us to execute two different
-tasks (as described in our pre-print []):
+tasks (as described in our pre-print [https://arxiv.org/abs/2203.01789]):
 * Task 1: Efficient circuit compilation and weak simulation; to carry out this
 task one should open the `Main.py` module, change the number of virtual qubits,
 `vq`, to 0 and adjust the parameters of the function `cc.run_pbc` as desired;
@@ -52,8 +52,20 @@ modules and run the command: `python Main.py`;
 6. Check the output files at the location that you have selected.
 
 
+**Tracking code versions**:
+1. First commit: the original version of the code;
+2. Second commit: no changes to the original code, simple inclusion of the
+e-print no. in this file and in the string documentation of the python files;
+3. Third commit: an improvement was made to the sampling complexity of the
+hybrid computation task (the theoretical explanation of this improvement can be
+seen in the final version of our article);
+4. Fourth commit: an improvement was made in the algorithm for assessing the
+(in)dependence of the Paulis; this lead to an improvement of the overall
+complexity of our code as seen in the new version of our article.
+
+
 **Copyright:**
-Copyright (C) 2022  F.C.R. Peres
+Copyright (C) 2022  Filipa C. R. Peres
 
 MIT License
 
