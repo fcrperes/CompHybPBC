@@ -49,14 +49,18 @@ In:Phys. Rev. A70 (2004), p. 052328.
 DOI: https://doi.org/10.1103/PhysRevA.70.052328.
 EPRINT: https://arxiv.org/abs/quant-ph/0406196v5.
 
-[2]  Filipa Peres and Ernesto Galvão. “Quantum circuit compilation and hybrid
-computation using Pauli-based computation”.
-EPRINT: https://arxiv.org/abs/2203.01789.
+[2]  Filipa C. R. Peres and Ernesto F. Galvao. "Quantum circuit compilation and
+hybrid computation using Pauli-based computation". In:Quantum 7, 1126 (2023).
+DOI: https://doi.org/10.22331/q-2023-10-03-1126.
+
+[3] Filipa C. R. Peres and Ernesto F. Galvao. "Reducing Depth and Measurement
+Weights in Pauli-based Computation".
+EPRINT: https://arxiv.org/abs/2408.04007.
 
 
 Author: F.C.R. Peres
 Creation date: 14/06/2021
-Last updated: 26/09/2023
+Last updated: 09/08/2024
 --------------------------------------------------------------------------------
 '''
 
@@ -66,6 +70,7 @@ import copy
 import random
 import time
 import math
+import itertools
 from math import sqrt
 import statistics as stat
 import numpy as np
@@ -84,6 +89,7 @@ class Pauli_Operator():
     """This class represents Hermitian Pauli operators and defines several
     operations that can be performed on and with them.
     """
+
     def __init__(self, bin_vec):
         """Initialize the attributes that are used to describe each
         Pauli_Operator instance (i.e., each Hermitian Pauli operator).
@@ -97,6 +103,14 @@ class Pauli_Operator():
         self.bin_vec = bin_vec
         self.nr_columns = len(bin_vec)
 
+    def magic_weight(self, q_count):
+        weight = 0
+        for i in range(q_count, int((self.nr_columns - 1) / 2)):
+            if (self.bin_vec[i] == 1
+                    or self.bin_vec[i + int((self.nr_columns - 1) / 2)] == 1):
+                weight += 1
+        return weight
+
     def h(self, i):
         """This method updates the Pauli_Operator instance it is applied to when
         that operator is propagated through a Hadamard gate acting on the i-th
@@ -108,8 +122,8 @@ class Pauli_Operator():
         self.bin_vec[-1] = (self.bin_vec[-1] +
                             self.bin_vec[i] * self.bin_vec[i + int(
                                 (self.nr_columns - 1) / 2)]) % 2
-        if (self.bin_vec[i] !=
-                self.bin_vec[i + int((self.nr_columns - 1) / 2)]):
+        if (self.bin_vec[i]
+                != self.bin_vec[i + int((self.nr_columns - 1) / 2)]):
             aux = self.bin_vec[i]
             self.bin_vec[i] = self.bin_vec[i + int((self.nr_columns - 1) / 2)]
             self.bin_vec[i + int((self.nr_columns - 1) / 2)] = aux
@@ -521,6 +535,46 @@ class Pauli_Operator():
             return index
 
 
+def Pauli_mult(q_count, P1, P2):
+    """This function multiplies the two Pauli operators P1 and P2. The way to
+    do so is explained in the paper by Aaronson and Gottesman [1].
+
+    Args:
+        q_count (int): Number of qubits in the Clifford+T quantum circuit.
+        P1 (Pauli_Operator): One of the operators to be multiplied.
+        P2 (Pauli_Operator): The other operator to be multiplied.
+    """
+    vec1 = P1.bin_vec
+    vec2 = P2.bin_vec
+    res = [0] * P1.nr_columns
+    for j in range(P1.nr_columns - 1):
+        res[j] = (vec1[j] + vec2[j]) % 2
+
+    gsum = 0
+    for j in range(q_count, int((P1.nr_columns - 1) / 2)):
+        x1 = vec1[j]
+        z1 = vec1[j + int((P1.nr_columns - 1) / 2)]
+        x2 = vec2[j]
+        z2 = vec2[j + int((P1.nr_columns - 1) / 2)]
+
+        if x1 == 1 and z1 == 1:
+            gsum += z2 - x2
+        elif x1 == 1 and z1 == 0:
+            gsum += z2 * (2 * x2 - 1)
+        elif x1 == 0 and z1 == 1:
+            gsum += x2 * (1 - 2 * z2)
+
+    gsum = (gsum + 2 * vec1[-1] + 2 * vec2[-1]) % 4
+
+    if gsum == 0:
+        res[-1] = 0
+
+    elif gsum == 2:
+        res[-1] = 1
+
+    return res
+
+
 def nullspace(matrix):
     """This function receives a matrix input as a list of list (i.e., a nested
     list) where each line represents a different binary vector and returns a
@@ -656,6 +710,167 @@ def find_new_Pauli(circuit_list, q_count, t_count):
     Pauli.gen_update(gate_sequence, q_count)
 
     return circuit_list, Pauli
+
+
+def greedy(q_count, t_count, pipc_Paulis, pipc_outcomes, current_Pauli, order):
+    """This function implements a greedy algorithm that can be used to improve
+    the features of the compiled circuit by reducing the weight of any Pauli
+    operator that is identified as a Pauli to be measured.
+
+    Args:
+        q_count (int):The number of qubits in the original Clifford+T circuit
+        pipc_Paulis (list(Pauli_Operator)): A list with all of the previously
+        measured (independent and pairwise commuting) Pauli operators
+        pipc_outcomes (list(0/1))): A list with the measurement outcomes
+        associated with all of the previously measured Pauli operators
+        current_Pauli (Pauli_Operator): The current Pauli operator instance in
+        the generalized PBC which needs to be evaluated
+        order (int, optional): Determines the number of Pauli ops allowed to be
+        combined with the current Pauli to try to find an equivalent Pauli with
+        smaller weight. For instance, if order = 1, it allows either 1 or (n-1)
+        Paulis to be combined with the current Pauli (this gives a linear nr.
+        of possible combinations in n to be tested); if order = 2, all the cases
+        of order = 1 are included, plus 2 or (n-2) operators from the list of
+        previously measured Paulis are combined with the current Pauli (this
+        leads to an added quadratic (in n) number of terms). The largest value
+        for order = n, for which 2^n combinations are being tested. We do not
+        recommend to go beyond order = 2, since this algorithm quickly grows
+        too demanding. Defaults to 1.
+
+    Returns:
+        Pauli_Operator: The new Pauli operator to be measured (with smaller
+        weight), i.e., the new version of the current Pauli Operator basically.
+    """
+    weight = current_Pauli.magic_weight(q_count)
+    new_op = Pauli_Operator([0] * current_Pauli.nr_columns)
+    fin_op = Pauli_Operator(current_Pauli.bin_vec.copy())
+    number_Paulis = [i for i in range(len(pipc_Paulis) - q_count)]
+    if order > len(pipc_Paulis) - q_count:
+        order = len(pipc_Paulis) - q_count
+
+    for degree in range(order + 1):
+        for comb in itertools.chain(
+                itertools.combinations(number_Paulis, degree),
+                itertools.combinations(number_Paulis,
+                                       len(pipc_Paulis) - q_count - degree)):
+
+            if comb == (): continue
+
+            outcome = 0
+            previousP = Pauli_Operator([0] * current_Pauli.nr_columns)
+            for index in comb:
+                outcome = (outcome + pipc_outcomes[q_count + index]) % 2
+                previousP = Pauli_Operator(
+                    Pauli_mult(q_count, previousP,
+                               pipc_Paulis[q_count + index]))
+
+            new_op = Pauli_Operator(
+                Pauli_mult(q_count, previousP, current_Pauli))
+
+            new_weight = new_op.magic_weight(q_count)
+            if new_weight < weight:
+                weight = new_weight
+                fin_op = Pauli_Operator(new_op.bin_vec.copy())
+                if outcome == 1:
+                    fin_op.bin_vec[-1] = (fin_op.bin_vec[-1] + 1) % 2
+            elif new_weight == weight:
+                # This aims to choose operator with small weight and nr of Ys
+                if sum(new_op.bin_vec[q_count:q_count + t_count] +
+                       new_op.bin_vec[2 * q_count + t_count:2 * q_count +
+                                      2 * t_count]
+                       ) < sum(fin_op.bin_vec[q_count:q_count + t_count] +
+                               fin_op.bin_vec[2 * q_count + t_count:2 *
+                                              q_count + 2 * t_count]):
+                    fin_op = Pauli_Operator(new_op.bin_vec.copy())
+                    if outcome == 1:
+                        fin_op.bin_vec[-1] = (fin_op.bin_vec[-1] + 1) % 2
+    return fin_op
+
+
+def random_greedy(q_count, t_count, pipc_Paulis, pipc_outcomes, current_Pauli,
+                  order):
+    """This function implements a greedy algorithm that can be used to improve
+    the features of the compiled circuit by reducing the weight of any Pauli
+    operator that is identified as a Pauli to be measured. It defers from
+    `greedy()` in that it tries to find random combinations of any number of
+    previously measured Pauli operators. It searches for a number of
+    combinations equal to the number of combinations tested either with
+    `order=1` and `order=2` of that algorithm. This means that it will take
+    rougly the same time as that algorithm with those order parameters.
+
+    Args:
+        q_count (int):The number of qubits in the original Clifford+T circuit
+        pipc_Paulis (list(Pauli_Operator)): A list with all of the previously
+        measured (independent and pairwise commuting) Pauli operators
+        pipc_outcomes (list(0/1))): A list with the measurement outcomes
+        associated with all of the previously measured Pauli operators
+        current_Pauli (Pauli_Operator): The current Pauli operator instance in
+        the generalized PBC which needs to be evaluated
+        order (int, optional): Determines the number of Pauli ops allowed to be
+        combined with the current Pauli to try to find an equivalent Pauli with
+        smaller weight. For instance, if order = 1, it allows either 1 or (n-1)
+        Paulis to be combined with the current Pauli (this gives a linear nr.
+        of possible combinations in n to be tested); if order = 2, all the cases
+        of order = 1 are included, plus 2 or (n-2) operators from the list of
+        previously measured Paulis are combined with the current Pauli (this
+        leads to an added quadratic (in n) number of terms). The largest value
+        for order = n, for which 2^n combinations are being tested. We do not
+        recommend to go beyond order = 2, since this algorithm quickly grows
+        too demanding. Defaults to 1.
+
+    Returns:
+        Pauli_Operator: The new Pauli operator to be measured (with smaller
+        weight), i.e., the new version of the current Pauli Operator basically.
+    """
+    weight = current_Pauli.magic_weight(q_count)
+    new_op = Pauli_Operator([0] * current_Pauli.nr_columns)
+    fin_op = Pauli_Operator(current_Pauli.bin_vec.copy())
+    number_Paulis = [i for i in range(len(pipc_Paulis) - q_count)]
+    if order == 1:
+        samples = 1 + 2 * (len(pipc_Paulis) - q_count)
+    elif order == 2:
+        samples = 1 + 2 * (len(pipc_Paulis) - q_count) + (
+            len(pipc_Paulis) - q_count) * (len(pipc_Paulis) - q_count - 1)
+    else:
+        raise ValueError
+
+    combinations = []
+    for _ in range(samples):
+        if len(pipc_outcomes) - q_count == 0: continue
+
+        comb = random.sample(number_Paulis,
+                             k=random.randint(1,
+                                              len(pipc_Paulis) - q_count))
+
+        outcome = 0
+        previousP = Pauli_Operator([0] * current_Pauli.nr_columns)
+        for index in comb:
+            outcome = (outcome + pipc_outcomes[q_count + index]) % 2
+            previousP = Pauli_Operator(
+                Pauli_mult(q_count, previousP, pipc_Paulis[q_count + index]))
+
+        new_op = Pauli_Operator(Pauli_mult(q_count, previousP, current_Pauli))
+        new_weight = new_op.magic_weight(q_count)
+        if new_weight < weight:
+            weight = new_weight
+            fin_op = Pauli_Operator(new_op.bin_vec.copy())
+            if outcome == 1:
+                fin_op.bin_vec[-1] = (fin_op.bin_vec[-1] + 1) % 2
+        elif new_weight == weight:
+            # This aims to choose operator with small weight and nr of Ys
+            if sum(new_op.bin_vec[q_count:q_count + t_count] +
+                   new_op.bin_vec[2 * q_count + t_count:2 * q_count +
+                                  2 * t_count]
+                   ) < sum(fin_op.bin_vec[q_count:q_count + t_count] +
+                           fin_op.bin_vec[2 * q_count + t_count:2 * q_count +
+                                          2 * t_count]):
+                fin_op = Pauli_Operator(new_op.bin_vec.copy())
+                if outcome == 1:
+                    fin_op.bin_vec[-1] = (fin_op.bin_vec[-1] + 1) % 2
+
+        combinations.append(comb)
+
+    return fin_op
 
 
 def qu_computing(q_count, t_count, current_Pauli, state_vector, dummy):
@@ -808,7 +1023,8 @@ def compiling(circuit_list,
               all_outcomes,
               current_Pauli,
               first_qm,
-              dummy=False):
+              dummy=False,
+              greedy_order=-1):
     """This function carries out the PBC compilation procedure, calling
     'qu_computing()' when the outcome of the Pauli operator must be determined
     via an actual quantum measurement, and carring out the appropriate classical
@@ -839,7 +1055,10 @@ def compiling(circuit_list,
         non-empty state vector exists or not.
         dummy (bool, optional): Determines whether we use Qiskit's Statevector
         Simulator (if False) or if we use the naïve (dummy) simulation. Defaults
-        to False
+        to False.
+        greedy_order (int, options): Order for the greedy algorithm (see
+        function `greedy()` for details. The function is only run if this
+        parameter is set to >=0). Defaults to -1.
 
     Returns:
         tuple (list[str], list([Pauli_Operators]), list([0/1]),
@@ -894,6 +1113,14 @@ def compiling(circuit_list,
             outcome = kernel
 
         else:
+            if greedy_order >= 0:
+                current_Pauli = greedy(q_count,
+                                       t_count,
+                                       pipc_Paulis,
+                                       pipc_outcomes,
+                                       current_Pauli,
+                                       order=greedy_order)
+
             if not first_qm:
                 state_vector = np.array([])
                 tt = 0
@@ -946,6 +1173,7 @@ def run_pbc(file_loc,
             shots=1024,
             paths_to_file=0,
             dummy=False,
+            greedy_order=-1,
             plot_hist=False,
             norm_hist=False):
     """Function that carries out the adaptive Pauli-based computation (PBC)
@@ -1037,7 +1265,8 @@ def run_pbc(file_loc,
                     all_outcs,
                     current_Pauli,
                     fqm,
-                    dummy=dummy)
+                    dummy=dummy,
+                    greedy_order=greedy_order)
                 quant_time += job_time
                 quant_depth += quantum_depth
                 if (not quant_ops and quantum_ops):
@@ -1160,45 +1389,55 @@ def run_pbc(file_loc,
         if t_count > 1:
             file_object.write(
                 f'Mean nr. of CX gates: {round(stat.mean(cx_count_cc), 3)}\n')
-            file_object.write(
-                f'Std CX gates: {round(stat.stdev(cx_count_cc), 3)}\n')
+            if shots > 1:
+                file_object.write(
+                    f'Std CX gates: {round(stat.stdev(cx_count_cc), 3)}\n')
         file_object.write(
             f'Mean nr. of H+S gates: {round(stat.mean(hs_count_cc), 3)}\n')
-        file_object.write(
-            f'Std H+S gates: {round(stat.stdev(hs_count_cc), 3)}\n')
+        if shots > 1:
+            file_object.write(
+                f'Std H+S gates: {round(stat.stdev(hs_count_cc), 3)}\n')
         file_object.write('\n')
 
         file_object.write("----- Qiskit's depth measure: -----\n")
         file_object.write(
             f'Average circuit depth: {round(stat.mean(qc_depth), 3)}\n')
-        file_object.write(
-            f'Std of the circuit depth: {round(stat.stdev(qc_depth), 3)}\n')
+        if shots > 1:
+            file_object.write(
+                f'Std of the circuit depth: {round(stat.stdev(qc_depth), 3)}\n'
+            )
         file_object.write('\n')
 
         if stat.mean(cl_time) > 1:
             avg_cl_time = round(stat.mean(cl_time), 3)
-            std_cl_time = round(stat.stdev(cl_time), 3)
+            if shots > 1:
+                std_cl_time = round(stat.stdev(cl_time), 3)
             unit = 's/shot'
         else:
             avg_cl_time = round(stat.mean(cl_time) * 1000, 3)
-            std_cl_time = round(stat.stdev(cl_time) * 1000, 3)
+            if shots > 1:
+                std_cl_time = round(stat.stdev(cl_time) * 1000, 3)
             unit = 'ms/shot'
         file_object.write("----- Classical runtime: -----\n")
         file_object.write(f'Average: {avg_cl_time}{unit}\n')
-        file_object.write(f'Standard deviation: {std_cl_time}{unit}\n')
+        if shots > 1:
+            file_object.write(f'Standard deviation: {std_cl_time}{unit}\n')
         file_object.write('\n')
 
         if stat.mean(qu_time) > 1:
             avg_qu_time = round(stat.mean(qu_time), 3)
-            std_qu_time = round(stat.stdev(qu_time), 3)
+            if shots > 1:
+                std_qu_time = round(stat.stdev(qu_time), 3)
             unit = 's/shot'
         else:
             avg_qu_time = round(stat.mean(qu_time) * 1000, 3)
-            std_qu_time = round(stat.stdev(qu_time) * 1000, 3)
+            if shots > 1:
+                std_qu_time = round(stat.stdev(qu_time) * 1000, 3)
             unit = 'ms/shot'
         file_object.write("----- Quantum simulator job time: -----\n")
         file_object.write(f'Average: {avg_qu_time}{unit}\n')
-        file_object.write(f'Standard deviation: {std_qu_time}{unit}\n')
+        if shots > 1:
+            file_object.write(f'Standard deviation: {std_qu_time}{unit}\n')
         file_object.write('\n')
 
         file_object.write(
@@ -1206,34 +1445,46 @@ def run_pbc(file_loc,
         if t_count > 1:
             if stat.mean(min_coherence) > 1:
                 avg_max_cohe = round(stat.mean(max_coherence), 3)
-                std_max_cohe = round(stat.stdev(max_coherence), 3)
+                if shots > 1:
+                    std_max_cohe = round(stat.stdev(max_coherence), 3)
                 avg_mean_cohe = round(stat.mean(mean_coherence), 3)
-                std_mean_cohe = round(stat.stdev(mean_coherence), 3)
+                if shots > 1:
+                    std_mean_cohe = round(stat.stdev(mean_coherence), 3)
                 avg_min_cohe = round(stat.mean(min_coherence), 3)
-                std_min_cohe = round(stat.stdev(min_coherence), 3)
+                if shots > 1:
+                    std_min_cohe = round(stat.stdev(min_coherence), 3)
                 unit = 's/shot'
             else:
                 avg_max_cohe = round(stat.mean(max_coherence) * 1000, 3)
-                std_max_cohe = round(stat.stdev(max_coherence) * 1000, 3)
+                if shots > 1:
+                    std_max_cohe = round(stat.stdev(max_coherence) * 1000, 3)
                 avg_mean_cohe = round(stat.mean(mean_coherence) * 1000, 3)
-                std_mean_cohe = round(stat.stdev(mean_coherence) * 1000, 3)
+                if shots > 1:
+                    std_mean_cohe = round(stat.stdev(mean_coherence) * 1000, 3)
                 avg_min_cohe = round(stat.mean(min_coherence) * 1000, 3)
-                std_min_cohe = round(stat.stdev(min_coherence) * 1000, 3)
+                if shots > 1:
+                    std_min_cohe = round(stat.stdev(min_coherence) * 1000, 3)
                 unit = 'ms/shot'
 
             file_object.write(" * Maximum time in between jobs: \n")
             file_object.write(f'Average: {avg_max_cohe}{unit}\n')
-            file_object.write(f'Standard deviation: {std_max_cohe}{unit}\n')
+            if shots > 1:
+                file_object.write(
+                    f'Standard deviation: {std_max_cohe}{unit}\n')
             file_object.write('\n')
 
             file_object.write(" * Average time in between jobs: \n")
             file_object.write(f'Average: {avg_mean_cohe}{unit}\n')
-            file_object.write(f'Standard deviation: {std_mean_cohe}{unit}\n')
+            if shots > 1:
+                file_object.write(
+                    f'Standard deviation: {std_mean_cohe}{unit}\n')
             file_object.write('\n')
 
             file_object.write(" * Minimum time in between jobs: \n")
             file_object.write(f'Average: {avg_min_cohe}{unit}\n')
-            file_object.write(f'Standard deviation: {std_min_cohe}{unit}\n')
+            if shots > 1:
+                file_object.write(
+                    f'Standard deviation: {std_min_cohe}{unit}\n')
             file_object.write('\n')
 
         else:
@@ -1330,6 +1581,7 @@ def hybrid_pbc(file_loc,
                input_file_name,
                clifford_file_name,
                resources_file_name,
+               greedy_order=-1,
                virtual_qubits=1,
                precision=0.1,
                confidence_level=0.99):
@@ -1446,7 +1698,8 @@ def hybrid_pbc(file_loc,
                 all_outcs,
                 current_Pauli,
                 fqm,
-                dummy=False)
+                dummy=False,
+                greedy_order=greedy_order)
             quant_time += job_time
 
         # The outcome is computed as:

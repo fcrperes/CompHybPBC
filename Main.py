@@ -34,7 +34,7 @@ total number of gates [3].
 
 Useful references:
 [1]  Sergey Bravyi, Graeme Smith, and John A. Smolin. “Trading Classical and
-Quantum Computational Resources”. In:Phys. Rev.X6 (2016), p. 021043.
+Quantum Computational Resources”. In:Phys. Rev.X 6 (2016), p. 021043.
 DOI: https://doi.org/10.1103/PhysRevX.6.021043.
 EPRINT: https://arxiv.org/abs/1506.01396.
 
@@ -42,13 +42,17 @@ EPRINT: https://arxiv.org/abs/1506.01396.
 of unitary Clifford circuits with magic state inputs”. In:Proc. R. Soc. A475
 (2019),p. 20180427. DOI: https://www.doi.org/10.1098/rspa.2018.0427.
 
-[3]  Filipa Peres and Ernesto Galvão. "Quantum circuit compilation and hybrid
-computation using Pauli-based computation".
-EPRINT: https://arxiv.org/abs/2203.01789.
+[3]  Filipa C. R. Peres and Ernesto F. Galvao. "Quantum circuit compilation and
+hybrid computation using Pauli-based computation". In:Quantum 7, 1126 (2023).
+DOI: https://doi.org/10.22331/q-2023-10-03-1126.
+
+[3] Filipa C. R. Peres and Ernesto F. Galvao. "Reducing Depth and Measurement
+Weights in Pauli-based Computation".
+EPRINT: https://arxiv.org/abs/2408.04007.
 
 Author: F.C.R. Peres
 Creation date: 01/06/2021
-Last update: 26/09/2023
+Last update: 09/08/2024
 --------------------------------------------------------------------------------
 '''
 import c_and_c as cc
@@ -56,6 +60,9 @@ import c_and_c as cc
 # Select the location and name of the input sample file(s)
 file_loc = '/Users/folder/'
 input_file_name = 'circuit_file'
+
+# Parameter `go` for the greedy algorithm
+go = 1
 
 # Select the number of virtual qubits (place `0` to carry out PBC compilation)
 vq = 0
@@ -77,6 +84,7 @@ if vq == 0:
                shots=1024,
                paths_to_file=32,
                dummy=False,
+               greedy_order=go,
                plot_hist=True,
                norm_hist=True)
 
@@ -86,6 +94,7 @@ else:
                   input_file_name,
                   clifford_file_name,
                   resources_file_name,
+                  greedy_order=go,
                   virtual_qubits=vq,
                   precision=prec,
                   confidence_level=cl)

@@ -1,7 +1,7 @@
 # Circuit compilation and hybrid computation using Pauli-based computation
 
 In this repository we can find the Python code used to produce the results
-presented in our pre-print [https://arxiv.org/abs/2203.01789].
+presented in our paper [https://quantum-journal.org/papers/q-2023-10-03-1126/].
 
 This code uses different modules, each equipped with different classes, methods
 and functions to make things more readable and user friendly.
@@ -23,7 +23,8 @@ Contact: filipa.peres@inl.int
 
 
 **Brief description:** The modules supplied allow us to execute two different
-tasks (as described in our pre-print [https://arxiv.org/abs/2203.01789]):
+tasks (as described in our paper
+[https://quantum-journal.org/papers/q-2023-10-03-1126/]):
 * Task 1: Efficient circuit compilation and weak simulation; to carry out this
 task one should open the `Main.py` module, change the number of virtual qubits,
 `vq`, to 0 and adjust the parameters of the function `cc.run_pbc` as desired;
@@ -62,6 +63,8 @@ seen in the final version of our article);
 4. Fourth commit: an improvement was made in the algorithm for assessing the
 (in)dependence of the Paulis; this lead to an improvement of the overall
 complexity of our code as seen in the new version of our article.
+5. Fifth commit: included the greedy algorithm proposed in our new preprint
+[https://arxiv.org/abs/2408.04007].
 
 
 **Copyright:**
