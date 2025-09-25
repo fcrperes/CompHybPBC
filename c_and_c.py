@@ -60,7 +60,7 @@ EPRINT: https://arxiv.org/abs/2408.04007.
 
 Author: F.C.R. Peres
 Creation date: 14/06/2021
-Last updated: 09/08/2024
+Last updated: 16/09/2025
 --------------------------------------------------------------------------------
 '''
 
@@ -1097,6 +1097,7 @@ def compiling(circuit_list,
         circuit_list.insert(first_gate_index, v)
 
     else:
+        matrix_old = copy.deepcopy(matrix)
         kernel, matrix = current_Pauli.is_independent(q_count, t_count,
                                                       pipc_Paulis, matrix)
         if isinstance(kernel, list):
@@ -1120,7 +1121,8 @@ def compiling(circuit_list,
                                        pipc_outcomes,
                                        current_Pauli,
                                        order=greedy_order)
-
+                _ , matrix = current_Pauli.is_independent(q_count, t_count,
+                                                      pipc_Paulis, matrix_old)
             if not first_qm:
                 state_vector = np.array([])
                 tt = 0
